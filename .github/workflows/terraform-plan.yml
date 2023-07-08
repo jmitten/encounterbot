@@ -1,7 +1,11 @@
 name: "Terraform Plan"
 
 on:
-  pull_request:
+  push:
+    branches:
+      - Develop
+      - main
+#  pull_request:
 
 env:
   TF_CLOUD_ORGANIZATION: "jareds-org"
