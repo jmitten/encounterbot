@@ -13,6 +13,8 @@ env:
   TF_WORKSPACE: "encounter-bot"
   INFRA_DIRECTORY: "./infrastructure/"
   SOURCE_CODE_DIRECTORY: "./src/"
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+  SHOULD_BUILD: ${{ env.BRANCH_NAME }} == 'Develop' || ${{ env.BRANCH_NAME }} == 'main'
 
 permissions:
   contents: read
@@ -44,11 +46,13 @@ jobs:
         run: |
           pytest
       - name: Bundle artifact with dependencies
+        if: ${{ env.SHOULD_BUILD }}
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
           zip -r ../function.zip .
       - name: Upload artifact
+        if: ${{ env.SHOULD_BUILD }}
         uses: actions/upload-artifact@v3
         with:
           name: encounter-bot
