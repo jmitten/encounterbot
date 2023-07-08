@@ -87,7 +87,7 @@ jobs:
         # if: steps.check-for-build-artifact.outputs.exists != 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
-          unzip function.zip .
+          unzip function.zip
           del function.zip
           ls -r
       - name: Upload Configuration
