@@ -88,7 +88,7 @@ jobs:
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           unzip function.zip
-          del function.zip
+          rm function.zip
           ls -r
       - name: Upload Configuration
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
