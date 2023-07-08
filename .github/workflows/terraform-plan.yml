@@ -40,6 +40,7 @@ jobs:
             .github
       - name: Download artifact
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}
@@ -47,17 +48,13 @@ jobs:
         if: failure()
         run: |
           echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"
-      - name: Continue progress
-        if: always()
-        run: |
-            echo Continuing...
       #      - name: Check for previous build artifact
 #        uses: xSAVIKx/artifact-exists-action@v0
 #        id: check-for-build-artifact
 #        with:
 #          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
-        if: ${{ env.SHOULD_BUILD }}
+        if: ${{ env.SHOULD_BUILD }} == 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
