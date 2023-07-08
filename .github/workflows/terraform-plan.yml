@@ -47,6 +47,10 @@ jobs:
         if: failure()
         run: |
           echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"
+      - name: Continue progress
+        if: always()
+        run: |
+            echo Continuing...
       #      - name: Check for previous build artifact
 #        uses: xSAVIKx/artifact-exists-action@v0
 #        id: check-for-build-artifact
