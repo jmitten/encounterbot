@@ -38,21 +38,29 @@ jobs:
           path: |
             ${{ env.SOURCE_CODE_DIRECTORY }}
             .github
-
-      - name: Check for previous build artifact
-        uses: xSAVIKx/artifact-exists-action@v0
-        id: check-for-build-artifact
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}
+      - name: Check for previous build artifact
+        if: success() || failure()
+        run: |
+          echo "SHOULD_BUILD=${{ failure() }}" >> "$GITHUB_ENV"
+      #      - name: Check for previous build artifact
+#        uses: xSAVIKx/artifact-exists-action@v0
+#        id: check-for-build-artifact
+#        with:
+#          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
-        if: steps.check-for-build-artifact.outputs.exists != 'true'
+        if: ${{ env.SHOULD_BUILD }}
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
-        if: steps.check-for-build-artifact.outputs.exists != 'true'
+        if: ${{ env.SHOULD_BUILD }}
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -64,25 +72,17 @@ jobs:
         run: |
           pytest
       - name: Bundle source with dependencies
-        if: steps.check-for-build-artifact.outputs.exists != 'true'
+        if: ${{ env.SHOULD_BUILD }}
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
           zip -r function.zip .
       - name: Upload artifact
-        if: steps.check-for-build-artifact.outputs.exists != 'true'
+        if: ${{ env.SHOULD_BUILD }}
         uses: actions/upload-artifact@v3
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
-      - name: Clean source dir
-        run: |
-          rm -r ${{ env.SOURCE_CODE_DIRECTORY }}
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
-          path: ${{ env.SOURCE_CODE_DIRECTORY }}
       - name: Extract artifact
         # if: steps.check-for-build-artifact.outputs.exists != 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
