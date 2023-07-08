@@ -14,7 +14,7 @@ env:
   INFRA_DIRECTORY: "./infrastructure/"
   SOURCE_CODE_DIRECTORY: "./src/"
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  SHOULD_BUILD: ${{ env.BRANCH_NAME }} == 'Develop' || ${{ env.BRANCH_NAME }} == 'main'
+  SHOULD_BUILD: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
 
 permissions:
   contents: read
