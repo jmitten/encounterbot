@@ -45,9 +45,9 @@ jobs:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}
       - name: Check for previous build artifact
-        if: failure()
+        working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
-          echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"
+          if [ -f function.zip ]; then echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"; fi
       #      - name: Check for previous build artifact
 #        uses: xSAVIKx/artifact-exists-action@v0
 #        id: check-for-build-artifact
