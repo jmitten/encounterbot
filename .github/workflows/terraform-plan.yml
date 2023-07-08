@@ -44,7 +44,7 @@ jobs:
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
-        if: steps.check-for-build-artifact.outputs.exists == false
+        if: steps.check-for-build-artifact.outputs.exists != 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
