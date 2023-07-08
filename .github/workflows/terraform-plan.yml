@@ -5,7 +5,7 @@ on:
     branches:
       - Develop
       - main
-#  pull_request:
+  pull_request:
 
 env:
   TF_CLOUD_ORGANIZATION: "jareds-org"
@@ -14,7 +14,7 @@ env:
   INFRA_DIRECTORY: "./infrastructure/"
   SOURCE_CODE_DIRECTORY: "./src/"
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  SHOULD_BUILD: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
+  SHOULD_PUBLISH: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
 
 permissions:
   contents: read
@@ -28,101 +28,113 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
+      - name: Build source directory hash
+        id: source-directory-hash
+        uses: theowenyoung/folder-hash@v3
+        with:
+          path: |
+            ${{ env.SOURCE_CODE_DIRECTORY }}
+            .github
+      - name: Check for previous build artifact
+        uses: xSAVIKx/artifact-exists-action@v0
+        id: check-for-build-artifact
+        with:
+          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
+        if: steps.check-for-build-artifact.outputs.exists == false
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
+        if: steps.check-for-build-artifact.outputs.exists == false
         run: |
-          # stop the build if there are Python syntax errors or undefined names
+           stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+           exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with pytest
         if: false
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           pytest
-      - name: Bundle artifact with dependencies
-        if: ${{ env.SHOULD_BUILD }}
+      - name: Bundle source with dependencies
+        if: steps.check-for-build-artifact.outputs.exists == false
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
-          zip -r ../function.zip .
       - name: Upload artifact
-        if: ${{ env.SHOULD_BUILD }}
+        if: steps.check-for-build-artifact.outputs.exists == false
         uses: actions/upload-artifact@v3
         with:
-          name: encounter-bot
-          path: function.zip
-          retention-days: 5
-#  terraform:
-#    if: github.repository != 'hashicorp-education/learn-terraform-github-actions'
-#    name: "Terraform Plan"
-#    runs-on: ubuntu-latest
-#    permissions:
-#      contents: read
-#      pull-requests: write
-#    steps:
-#      - name: Checkout
-#        uses: actions/checkout@v3
-#
-#      - name: Upload Configuration
-#        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
-#        id: plan-upload
-#        with:
-#          workspace: ${{ env.TF_WORKSPACE }}
-#          directory: ${{ env.INFRA_DIRECTORY }}
-#          speculative: true
-#
-#      - name: Create Plan Run
-#        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.2
-#        id: plan-run
-#        with:
-#          workspace: ${{ env.TF_WORKSPACE }}
-#          configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
-#          plan_only: true
-#
-#      - name: Get Plan Output
-#        uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.0.2
-#        id: plan-output
-#        with:
-#          plan: ${{ fromJSON(steps.plan-run.outputs.payload).data.relationships.plan.data.id }}
-#
-#      - name: Update PR
-#        uses: actions/github-script@v6
-#        id: plan-comment
-#        with:
-#          github-token: ${{ secrets.GITHUB_TOKEN }}
-#          script: |
-#            // 1. Retrieve existing bot comments for the PR
-#            const { data: comments } = await github.rest.issues.listComments({
-#              owner: context.repo.owner,
-#              repo: context.repo.repo,
-#              issue_number: context.issue.number,
-#            });
-#            const botComment = comments.find(comment => {
-#              return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
-#            });
-#            const output = `#### Terraform Cloud Plan Output
-#               \`\`\`
-#               Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
-#               \`\`\`
-#               [Terraform Cloud Plan](${{ steps.plan-run.outputs.run_link }})
-#               `;
-#            // 3. Delete previous comment so PR timeline makes sense
-#            if (botComment) {
-#              github.rest.issues.deleteComment({
-#                owner: context.repo.owner,
-#                repo: context.repo.repo,
-#                comment_id: botComment.id,
-#              });
-#            }
-#            github.rest.issues.createComment({
-#              issue_number: context.issue.number,
-#              owner: context.repo.owner,
-#              repo: context.repo.repo,
-#              body: output
-#            });
+          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}
+      - name: Terraform plan
+        runs-on: ubuntu-latest
+        permissions:
+          contents: read
+          pull-requests: write
+        steps:
+          - name: Checkout
+            uses: actions/checkout@v3
+          - name: Upload Configuration
+            uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
+            id: plan-upload
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              directory: ${{ env.INFRA_DIRECTORY }}
+              speculative: true
+          - name: Create Plan Run
+            uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.2
+            id: plan-run
+            with:
+              workspace: ${{ env.TF_WORKSPACE }}
+              configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
+              plan_only: true
+          - name: Get Plan Output
+            uses: hashicorp/tfc-workflows-github/actions/plan-output@v1.0.2
+            id: plan-output
+            with:
+              plan: ${{ fromJSON(steps.plan-run.outputs.payload).data.relationships.plan.data.id }}
+          - name: Update PR
+            if: github.event_name == 'pull_request'
+            uses: actions/github-script@v6
+            id: plan-comment
+            with:
+              github-token: ${{ secrets.GITHUB_TOKEN }}
+              script: |
+                // 1. Retrieve existing bot comments for the PR
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                });
+                const botComment = comments.find(comment => {
+                  return comment.user.type === 'Bot' && comment.body.includes('Terraform Cloud Plan Output')
+                });
+                const output = ` Terraform Cloud Plan Output
+                   \`\`\`
+                   Plan: ${{ steps.plan-output.outputs.add }} to add, ${{ steps.plan-output.outputs.change }} to change, ${{ steps.plan-output.outputs.destroy }} to destroy.
+                   \`\`\`
+                   [Terraform Cloud Plan](${{ steps.plan-run.outputs.run_link }})
+                   `;
+                // 3. Delete previous comment so PR timeline makes sense
+                if (botComment) {
+                  github.rest.issues.deleteComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: botComment.id,
+                  });
+                }
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: output
+                });
