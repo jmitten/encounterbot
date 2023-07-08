@@ -68,13 +68,14 @@ jobs:
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
-          zip -r ./../function.zip .
+          zip -r function.zip .
       - name: Upload artifact
         if: steps.check-for-build-artifact.outputs.exists != 'true'
         uses: actions/upload-artifact@v3
+        working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
-          path: ${{ env.SOURCE_CODE_DIRECTORY }}../function.zip
+          path: function.zip
       - name: Clean source dir
         run: |
           rm -r ${{ env.SOURCE_CODE_DIRECTORY }}
