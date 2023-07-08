@@ -75,7 +75,7 @@ jobs:
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
-          path: function.zip
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
       - name: Clean source dir
         run: |
           rm -r ${{ env.SOURCE_CODE_DIRECTORY }}
