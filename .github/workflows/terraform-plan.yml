@@ -51,7 +51,7 @@ jobs:
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
-        if: steps.check-for-build-artifact.outputs.exists == false
+        if: steps.check-for-build-artifact.outputs.exists == 'false'
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -63,12 +63,12 @@ jobs:
         run: |
           pytest
       - name: Bundle source with dependencies
-        if: steps.check-for-build-artifact.outputs.exists == false
+        if: steps.check-for-build-artifact.outputs.exists == 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
       - name: Upload artifact
-        if: steps.check-for-build-artifact.outputs.exists == false
+        if: steps.check-for-build-artifact.outputs.exists == 'false'
         uses: actions/upload-artifact@v3
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
