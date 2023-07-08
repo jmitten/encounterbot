@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
-          if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt --target=../tmp_package; fi
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
@@ -42,11 +42,11 @@ jobs:
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           pytest
-      - name: Bundle artifact
+      - name: Bundle artifact with dependencies
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
-          zip -r function.zip .
-          ls -r
+          if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
+          zip -r ../function.zip .
   terraform:
     if: github.repository != 'hashicorp-education/learn-terraform-github-actions'
     name: "Terraform Plan"
