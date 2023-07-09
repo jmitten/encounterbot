@@ -11,7 +11,7 @@ auth_token = os.getenv('API_CALLBACK_AUTH_TOKEN')
 bot_id = os.getenv('BOT_ID')
 sheet_id = os.getenv('GOOGLE_SHEET_ID')
 
-help_text = """Encounter Bot Version 1.0.0
+help_text = """Encounter Bot Version 2.0.0
 
 Usage:
 !encounter <command>
