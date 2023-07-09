@@ -34,3 +34,33 @@ resource "aws_iam_role" "lambda_role" {
       ]
     })
 }
+
+resource "aws_iam_role_policy" "lambda_role_policy" {
+  role = aws_iam_role.lambda_role.id
+  name_prefix = "${var.infra_name_prefix}_lambda_policy_${var.region}"
+  policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          Resource = "*"
+        }
+      ]
+    })
+}
+
+resource "aws_lambda_function" "bot_lambda" {
+  filename = "${path.module}/../src/function.zip"
+  function_name = "${var.infra_name_prefix}"
+  role = aws_iam_role.lambda_role.arn
+  handler = "bot.callback_handler"
+  # source_code_hash = data.archive_file.lambdas.output_base64sha256
+  runtime = "python3.10"
+  timeout = 10
+}
