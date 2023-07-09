@@ -160,7 +160,7 @@ jobs:
   terraform-apply-dev:
     runs-on: ubuntu-latest
     needs: [build, terraform-plan-dev]
-    if: false
+    if: env.SHOULD_PUBLISH == 'true'
     environment: Develop
     permissions:
       contents: read
