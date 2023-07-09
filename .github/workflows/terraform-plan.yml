@@ -54,14 +54,14 @@ jobs:
 #        with:
 #          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
-        if: ${{ env.SHOULD_BUILD }}
+        if: env.SHOULD_BUILD == 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
-        if: ${{ env.SHOULD_BUILD }}
+        if: env.SHOULD_BUILD == 'true'
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -73,19 +73,19 @@ jobs:
         run: |
           pytest
       - name: Bundle source with dependencies
-        if: ${{ env.SHOULD_BUILD }}
+        if: env.SHOULD_BUILD == 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
           zip -r function.zip .
       - name: Upload artifact
-        if: ${{ env.SHOULD_BUILD }}
+        if: env.SHOULD_BUILD == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
       - name: Extract artifact
-        if: ${{ env.SHOULD_BUILD }} == false
+        if: env.SHOULD_BUILD == 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           unzip function.zip
