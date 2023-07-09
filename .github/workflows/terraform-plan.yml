@@ -47,7 +47,7 @@ jobs:
       - name: Check for previous build artifact
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
-          if [ -f function.zip ]; then echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"; fi
+          if [ -f function.zip ]; then echo "SHOULD_BUILD=false" >> "$GITHUB_ENV"; else echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"; fi
       #      - name: Check for previous build artifact
 #        uses: xSAVIKx/artifact-exists-action@v0
 #        id: check-for-build-artifact
