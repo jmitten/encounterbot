@@ -82,7 +82,6 @@ jobs:
     env:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
-      TF_CLOUD_WORKSPACE: ${{ vars.TF_WORKSPACE }}
     steps:
       - name: Build source directory hash
         id: source-directory-hash
@@ -99,6 +98,7 @@ jobs:
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
         id: plan-upload
         with:
+          workspace: ${{ vars.TF_WORKSPACE }}
           directory: ${{ env.INFRA_DIRECTORY }}
           speculative: true
       - name: Create Plan Run
