@@ -101,6 +101,8 @@ jobs:
         with:
           key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
+      - name: Copy artifact to terraform directory
+        run: cp ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip ${{ env.INFRA_DIRECTORY }}/function.zip
       - name: Upload Configuration
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
         id: plan-upload
@@ -178,6 +180,8 @@ jobs:
         with:
           key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
+      - name: Copy artifact to terraform directory
+        run: cp ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip ${{ env.INFRA_DIRECTORY }}/function.zip
       - name: Upload Configuration
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
         id: apply-upload

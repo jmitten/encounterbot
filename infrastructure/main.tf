@@ -56,11 +56,11 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
 }
 
 resource "aws_lambda_function" "bot_lambda" {
-  filename = "${abspath(path.module)}/../src/function.zip"
-  function_name = "${var.infra_name_prefix}"
+  filename = "function.zip"
+  function_name = var.infra_name_prefix
   role = aws_iam_role.lambda_role.arn
   handler = "bot.callback_handler"
-  # source_code_hash = data.archive_file.lambdas.output_base64sha256
+  source_code_hash = filesha256("function.zip")
   runtime = "python3.9"
   timeout = 10
 }
