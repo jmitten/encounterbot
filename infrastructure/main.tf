@@ -68,6 +68,14 @@ resource "aws_lambda_function" "bot_lambda" {
   source_code_hash = local.file_hash
   runtime = "python3.9"
   timeout = 10
+  environment {
+    variables = {
+      BOT_ID = sensitive(var.bot_id)
+      GOOGLE_SERVICE_ACCOUNT_CREDS = sensitive(base64decode(sensitive(var.google_service_account_creds)))
+      GOOGLE_SHEET_ID = sensitive(var.google_sheet_id)
+      API_CALLBACK_AUTH_TOKEN = sensitive(var.api_callback_auth_token)
+    }
+  }
 }
 
 resource "aws_lambda_function_url" "bot_url" {
