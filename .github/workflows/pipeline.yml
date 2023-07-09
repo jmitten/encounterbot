@@ -11,10 +11,19 @@ env:
   INFRA_DIRECTORY: "./infrastructure/"
   SOURCE_CODE_DIRECTORY: "./src"
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  SHOULD_PUBLISH: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
+  SHOULD_PUBLISH: ${{ (github.head_ref || github.ref_name) == 'Develop' || (github.head_ref || github.ref_name) == 'main' }}
   HASHED_DIRS: |
     ./src
     .github
+  TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+  TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+  TF_VAR_infra_name_prefix: "\"${{ vars.INFRA_NAME_PREFIX }}\""
+  TF_VAR_aws_access_key_id: "\"${{ secrets.AWS_ACCESS_KEY_ID }}\""
+  TF_VAR_aws_secret_access_key: "\"${{ secrets.AWS_SECRET_ACCESS_KEY }}\""
+  TF_VAR_bot_id: "\"${{ secrets.LAMBDA_BOT_ID }}\""
+  TF_VAR_google_service_account_creds: "\"${{ secrets.LAMBDA_GOOGLE_SERVICE_ACCOUNT_CREDS }}\""
+  TF_VAR_google_sheet_id: "\"${{ secrets.LAMBDA_GOOGLE_SHEET_ID }}\""
+  TF_VAR_api_callback_auth_token: "\"${{ secrets.LAMBDA_API_CALLBACK_AUTH_TOKEN }}\""
 
 permissions:
   contents: read
@@ -79,16 +88,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    env:
-      TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
-      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
-      TF_VAR_infra_name_prefix: "\"${{ vars.INFRA_NAME_PREFIX }}\""
-      TF_VAR_aws_access_key_id: "\"${{ secrets.AWS_ACCESS_KEY_ID }}\""
-      TF_VAR_aws_secret_access_key: "\"${{ secrets.AWS_SECRET_ACCESS_KEY }}\""
-      TF_VAR_bot_id: "\"${{ secrets.LAMBDA_BOT_ID }}\""
-      TF_VAR_google_service_account_creds: "\"${{ secrets.LAMBDA_GOOGLE_SERVICE_ACCOUNT_CREDS }}\""
-      TF_VAR_google_sheet_id: "\"${{ secrets.LAMBDA_GOOGLE_SHEET_ID }}\""
-      TF_VAR_api_callback_auth_token: "\"${{ secrets.LAMBDA_API_CALLBACK_AUTH_TOKEN }}\""
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -158,3 +157,44 @@ jobs:
               repo: context.repo.repo,
               body: output
             });
+  terraform-apply-dev:
+    if: ${{ env.SHOULD_PUBLISH == 'true' }}
+    runs-on: ubuntu-latest
+    needs: [build, terraform-plan-dev]
+    environment: Develop
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build source directory hash
+        id: source-directory-hash
+        uses: theowenyoung/folder-hash@v3
+        with:
+          path: ${{ env.HASHED_DIRS }}
+      - name: Download cached artifact
+        id: restore-cached-artifact
+        uses: actions/cache/restore@v3
+        with:
+          key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
+      - name: Upload Configuration
+        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
+        id: apply-upload
+        with:
+          workspace: ${{ vars.TF_WORKSPACE }}
+          directory: ${{ env.INFRA_DIRECTORY }}
+      - name: Create Apply Run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.2
+        id: apply-run
+        with:
+          workspace: ${{ vars.TF_WORKSPACE }}
+          configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
+      - name: Apply
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.0.2
+        if: fromJSON(steps.apply-run.outputs.payload).data.attributes.actions.IsConfirmable
+        id: apply
+        with:
+          run: ${{ steps.apply-run.outputs.run_id }}
+          comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
