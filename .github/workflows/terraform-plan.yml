@@ -85,7 +85,7 @@ jobs:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
       - name: Extract artifact
-        if: ${{ env.SHOULD_BUILD }} == 'false'
+        if: ${{ env.SHOULD_BUILD }} == false
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           unzip function.zip
