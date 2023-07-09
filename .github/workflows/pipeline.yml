@@ -158,7 +158,7 @@ jobs:
               body: output
             });
   terraform-apply-dev:
-    if: ${{ env.SHOULD_PUBLISH == 'true' }}
+    if: env.SHOULD_PUBLISH
     runs-on: ubuntu-latest
     needs: [build, terraform-plan-dev]
     environment: Develop
