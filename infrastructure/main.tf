@@ -56,7 +56,7 @@ resource "aws_iam_role_policy" "lambda_role_policy" {
 }
 
 resource "aws_lambda_function" "bot_lambda" {
-  filename = "${path.module}/../src/function.zip"
+  filename = "${abspath(path.module)}/../src/function.zip"
   function_name = "${var.infra_name_prefix}"
   role = aws_iam_role.lambda_role.arn
   handler = "bot.callback_handler"
