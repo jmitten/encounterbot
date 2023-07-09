@@ -12,7 +12,7 @@ env:
   TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
   TF_WORKSPACE: "encounter-bot"
   INFRA_DIRECTORY: "./infrastructure/"
-  SOURCE_CODE_DIRECTORY: "./src/"
+  SOURCE_CODE_DIRECTORY: "./src"
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   SHOULD_PUBLISH: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
 
@@ -38,30 +38,21 @@ jobs:
           path: |
             ${{ env.SOURCE_CODE_DIRECTORY }}
             .github
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        continue-on-error: true
+      - name: Download cached artifact
+        id: restore-cached-artifact
+        uses: actions/cache/restore@v3
         with:
-          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
-          path: ${{ env.SOURCE_CODE_DIRECTORY }}
-      - name: Check for previous build artifact
-        working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
-        run: |
-          if [ -f function.zip ]; then echo "SHOULD_BUILD=false" >> "$GITHUB_ENV"; else echo "SHOULD_BUILD=true" >> "$GITHUB_ENV"; fi
-      #      - name: Check for previous build artifact
-#        uses: xSAVIKx/artifact-exists-action@v0
-#        id: check-for-build-artifact
-#        with:
-#          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
       - name: Install dependencies
-        if: env.SHOULD_BUILD == 'true'
+        if: steps.restore-cached-artifact.outputs.cache-hit != 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
-        if: env.SHOULD_BUILD == 'true'
+        if: steps.restore-cached-artifact.outputs.cache-hit != 'true'
         run: |
           # stop the build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -73,24 +64,17 @@ jobs:
         run: |
           pytest
       - name: Bundle source with dependencies
-        if: env.SHOULD_BUILD == 'true'
+        if: steps.restore-cached-artifact.outputs.cache-hit != 'true'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt --target=./; fi
           zip -r function.zip .
-      - name: Upload artifact
-        if: env.SHOULD_BUILD == 'true'
-        uses: actions/upload-artifact@v3
+      - name: Save artifact to cache
+        if: steps.restore-cached-artifact.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
         with:
-          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
-          path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
-      - name: Extract artifact
-        if: env.SHOULD_BUILD == 'false'
-        working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
-        run: |
-          unzip function.zip
-          rm function.zip
-          ls -r
+          key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
       - name: Upload Configuration
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
         id: plan-upload
