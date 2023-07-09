@@ -83,6 +83,8 @@ jobs:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
       TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Build source directory hash
         id: source-directory-hash
         uses: theowenyoung/folder-hash@v3
@@ -105,6 +107,7 @@ jobs:
         uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.2
         id: plan-run
         with:
+          workspace: ${{ vars.TF_WORKSPACE }}
           configuration_version: ${{ steps.plan-upload.outputs.configuration_version_id }}
           plan_only: true
       - name: Get Plan Output
