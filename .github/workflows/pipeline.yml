@@ -1,4 +1,4 @@
-name: "Terraform Plan"
+name: "Build and Deploy"
 
 on:
   push:
@@ -12,6 +12,9 @@ env:
   SOURCE_CODE_DIRECTORY: "./src"
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   SHOULD_PUBLISH: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
+  HASHED_DIRS: |
+    ${{ env.SOURCE_CODE_DIRECTORY }}
+    .github
 
 permissions:
   contents: read
@@ -31,9 +34,7 @@ jobs:
         id: source-directory-hash
         uses: theowenyoung/folder-hash@v3
         with:
-          path: |
-            ${{ env.SOURCE_CODE_DIRECTORY }}
-            .github
+          path: ${{ env.HASHED_DIRS }}
       - name: Download cached artifact
         id: restore-cached-artifact
         uses: actions/cache/restore@v3
@@ -80,7 +81,20 @@ jobs:
       pull-requests: write
     env:
       TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
+      TF_CLOUD_ORGANIZATION: ${{ vars.TF_CLOUD_ORGANIZATION }}
+      TF_WORKSPACE: ${{ vars.TF_WORKSPACE }}
     steps:
+      - name: Build source directory hash
+        id: source-directory-hash
+        uses: theowenyoung/folder-hash@v3
+        with:
+          path: ${{ env.HASHED_DIRS }}
+      - name: Download cached artifact
+        id: restore-cached-artifact
+        uses: actions/cache/restore@v3
+        with:
+          key: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
+          path: ${{ env.SOURCE_CODE_DIRECTORY }}/function.zip
       - name: Upload Configuration
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.2
         id: plan-upload
