@@ -13,7 +13,7 @@ env:
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   SHOULD_PUBLISH: ${{ github.head_ref || github.ref_name }} == 'Develop' || ${{ github.head_ref || github.ref_name }} == 'main'
   HASHED_DIRS: |
-    ${{ env.SOURCE_CODE_DIRECTORY }}
+    ./src
     .github
 
 permissions:
