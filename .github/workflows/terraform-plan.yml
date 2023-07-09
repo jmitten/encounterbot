@@ -88,6 +88,7 @@ jobs:
         if: s${{ env.SHOULD_BUILD }} == 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
+          rm -v !("filename") -r
           unzip function.zip
           rm function.zip
           ls -r
