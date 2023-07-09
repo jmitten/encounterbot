@@ -54,7 +54,7 @@ jobs:
 #        with:
 #          name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
       - name: Install dependencies
-        if: ${{ env.SHOULD_BUILD }} == 'true'
+        if: ${{ env.SHOULD_BUILD }}
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           python -m pip install --upgrade pip
@@ -85,7 +85,7 @@ jobs:
           name: encounter-bot-${{ env.BRANCH_NAME }}-${{ steps.source-directory-hash.outputs.hash }}
           path: ${{ env.SOURCE_CODE_DIRECTORY }}function.zip
       - name: Extract artifact
-        # if: steps.check-for-build-artifact.outputs.exists != 'false'
+        if: s${{ env.SHOULD_BUILD }} == 'false'
         working-directory: ${{ env.SOURCE_CODE_DIRECTORY }}
         run: |
           unzip function.zip
