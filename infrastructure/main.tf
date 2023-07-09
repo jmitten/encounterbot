@@ -61,6 +61,6 @@ resource "aws_lambda_function" "bot_lambda" {
   role = aws_iam_role.lambda_role.arn
   handler = "bot.callback_handler"
   # source_code_hash = data.archive_file.lambdas.output_base64sha256
-  runtime = "python3.10"
+  runtime = "python3.9"
   timeout = 10
 }
