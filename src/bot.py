@@ -4,12 +4,16 @@ import os
 import requests
 import datetime
 import pygsheets
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 format_str = '%m/%d/%Y'
 
 auth_token = os.getenv('API_CALLBACK_AUTH_TOKEN')
 bot_id = os.getenv('BOT_ID')
 sheet_id = os.getenv('GOOGLE_SHEET_ID')
+calendar_id = os.getenv('GOOGLE_CALENDAR_ID')
 
 help_text = """Encounter Bot Version 2.0.0
 
@@ -19,6 +23,7 @@ Usage:
 
 Commands:
     birthday - View or add birthdays
+    event - View events
 """
 
 birthday_help_text = """Birthday command usage:
@@ -40,6 +45,23 @@ Commands:
             !e birthday list <option>
         Example:
             !e birthday list week
+"""
+
+event_help_text = """Event command usage:
+!encounter event <command> <options>
+!e event <command> <options>
+
+Commands:
+    list - List events
+        Options:
+            year - List all upcoming events for the year
+            month - List all upcoming events for the current month
+            week - List all upcoming events for the current week
+            day - List all upcoming events for the current day
+        Syntax:
+            !e event list <option>
+        Example:
+            !e event list week
 """
 
 
@@ -141,8 +163,34 @@ def execute(command, sender):
     if command.startswith("birthday"):
         return birthday(command.replace("birthday", "", 1), sender)
 
+    if command.startswith("event"):
+        return event(command.replace("event", "", 1), sender)
+
     return echo(help_text)
 
+
+def event(command, sender):
+    command = take_space(command)
+
+    if command.startswith("list"):
+        return list_events(command.replace("list", "", 1))
+
+    return echo(event_help_text)
+
+
+def list_events(command, silent=False):
+    command = take_space(command)
+
+    if command.startswith("year"):
+        return echo_events(get_events(), silent)
+    # elif command.startswith("month"):
+    #     return echo_birthdays(get_birthdays_for_month(), silent)
+    # elif command.startswith("week"):
+    #     return echo_birthdays(get_birthdays_for_week(), silent)
+    # elif command.startswith("day"):
+    #     return echo_birthdays(get_birthdays_for_day(), silent)
+    else:
+        return echo(event_help_text)
 
 def birthday(command, sender):
     command = take_space(command)
@@ -155,6 +203,20 @@ def birthday(command, sender):
 
     return echo(birthday_help_text)
 
+
+def list_birthdays(command, silent=False):
+    command = take_space(command)
+
+    if command.startswith("year"):
+        return echo_birthdays(get_birthdays_for_year(), silent)
+    elif command.startswith("month"):
+        return echo_birthdays(get_birthdays_for_month(), silent)
+    elif command.startswith("week"):
+        return echo_birthdays(get_birthdays_for_week(), silent)
+    elif command.startswith("day"):
+        return echo_birthdays(get_birthdays_for_day(), silent)
+    else:
+        return echo(birthday_help_text)
 
 def open_worksheet():
     gc = pygsheets.authorize(service_account_env_var='GOOGLE_SERVICE_ACCOUNT_CREDS')
@@ -173,6 +235,41 @@ def add_birthday(command, sender):
 
     worksheet.append_table([name, datestr], start='A2', end=None, dimension='ROWS', overwrite=False)
     return echo(sender + " added birthday for " + name + " with date " + datestr)
+
+
+def get_events():
+    cred = service_account.Credentials.from_service_account_info(json.load(os.getenv('GOOGLE_SERVICE_ACCOUNT_CREDS')))
+    calendar = build('calendar', 'v3', credentials=cred)
+    # Call the Calendar API
+    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+    echo('Getting the upcoming 10 events')
+    events_result = calendar.events().list(calendarId=calendar_id, timeMin=now,
+                                           maxResults=10, singleEvents=True,
+                                           orderBy='startTime').execute()
+    events = events_result.get('items', [])
+    results = []
+    for e in events:
+        startEntry = e['start']
+        start = datetime.datetime.fromisoformat(startEntry.get('dateTime', startEntry.get('date')))
+        summary = e['summary'] + " - " + format_event_time_string(e)
+        results.append({
+            start: start,
+            summary: summary
+        })
+    return results
+
+
+def format_event_time_string(event):
+    startEntry = event['start']
+    # endEntry = event['end']
+    start = datetime.datetime.fromisoformat(startEntry.get('dateTime', startEntry.get('date')))
+    # end = datetime.datetime.fromisoformat(endEntry.get('dateTime', endEntry.get('date')))
+    result = start.strftime('%a') + " " + start.strftime('%b') + " " + start.strftime('%d').lstrip("0")
+    if "dateTime" in startEntry:
+        result = result + " @ " + start.strftime("%I").lstrip("0") + ":" + start.strftime("%M%p")
+    else:
+        result = result + " (All day)"
+    return result
 
 
 def get_birthdays():
@@ -232,19 +329,19 @@ def echo_birthdays(birthdays, silent=False):
         echo("There are no upcoming birthdays =(")
 
 
-def list_birthdays(command, silent=False):
-    command = take_space(command)
+def echo_events(events, silent=False):
+    message = "Events:"
+    count = 0
+    for e in events:
+        message = message + "\n\t" + e['summary']
+        count = count + 1
+    if count > 0:
+        echo(message)
+    if count == 0 and not silent:
+        echo("There are no upcoming events =(")
 
-    if command.startswith("year"):
-        return echo_birthdays(get_birthdays_for_year(), silent)
-    elif command.startswith("month"):
-        return echo_birthdays(get_birthdays_for_month(), silent)
-    elif command.startswith("week"):
-        return echo_birthdays(get_birthdays_for_week(), silent)
-    elif command.startswith("day"):
-        return echo_birthdays(get_birthdays_for_day(), silent)
-    else:
-        return echo(birthday_help_text)
+
+
 
 
 def main():
