@@ -238,7 +238,7 @@ def add_birthday(command, sender):
 
 
 def get_events():
-    cred = service_account.Credentials.from_service_account_info(json.load(os.getenv('GOOGLE_SERVICE_ACCOUNT_CREDS')))
+    cred = service_account.Credentials.from_service_account_info(json.loads(os.getenv('GOOGLE_SERVICE_ACCOUNT_CREDS')))
     calendar = build('calendar', 'v3', credentials=cred)
     # Call the Calendar API
     now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
