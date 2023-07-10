@@ -253,8 +253,8 @@ def get_events():
         start = datetime.datetime.fromisoformat(startEntry.get('dateTime', startEntry.get('date')))
         summary = e['summary'] + " - " + format_event_time_string(e)
         results.append({
-            start: start,
-            summary: summary
+            "start": start,
+            "summary": summary
         })
     return results
 
