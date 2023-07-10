@@ -25,6 +25,11 @@ variable "google_sheet_id" {
   sensitive = true
 }
 
+variable "google_calendar_id" {
+  type      = string
+  sensitive = true
+}
+
 variable "google_service_account_creds" {
   type      = string
   sensitive = true

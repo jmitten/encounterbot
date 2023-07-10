@@ -19,6 +19,7 @@ env:
   TF_VAR_infra_name_prefix: "\"${{ vars.INFRA_NAME_PREFIX }}\""
   TF_VAR_aws_access_key_id: "\"${{ secrets.AWS_ACCESS_KEY_ID }}\""
   TF_VAR_aws_secret_access_key: "\"${{ secrets.AWS_SECRET_ACCESS_KEY }}\""
+  TF_VAR_google_calendar_id: "\"${{ secrets.LAMBDA_GOOGLE_CALENDAR_ID }}\""
   TF_VAR_bot_id: "\"${{ secrets.LAMBDA_BOT_ID }}\""
   TF_VAR_google_service_account_creds: "\"${{ secrets.LAMBDA_GOOGLE_SERVICE_ACCOUNT_CREDS }}\""
   TF_VAR_google_sheet_id: "\"${{ secrets.LAMBDA_GOOGLE_SHEET_ID }}\""

@@ -73,6 +73,7 @@ resource "aws_lambda_function" "bot_lambda" {
       BOT_ID = sensitive(var.bot_id)
       GOOGLE_SERVICE_ACCOUNT_CREDS = sensitive(base64decode(sensitive(var.google_service_account_creds)))
       GOOGLE_SHEET_ID = sensitive(var.google_sheet_id)
+      GOOGLE_CALENDAR_ID = sensitive(var.google_calendar_id)
       API_CALLBACK_AUTH_TOKEN = sensitive(var.api_callback_auth_token)
     }
   }
