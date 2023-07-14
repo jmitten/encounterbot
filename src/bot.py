@@ -1,12 +1,16 @@
 import json
 import time
 import os
+
+import pytz
+
 import requests
 import datetime
 import pygsheets
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
+
+my_timezone = pytz.timezone("America/New_York")
 
 format_str = '%m/%d/%Y'
 
@@ -37,7 +41,7 @@ Commands:
         Example: !e birthday add 11/30/1991 Bob Barker
     list - List birthdays
         Options:
-            year - List all upcoming birthdays for the year
+            year - List all upcoming birthdays for the current year
             month - List all upcoming birthdays for the current month
             week - List all upcoming birthdays for the current week
             day - List all birthdays for the current day
@@ -54,7 +58,7 @@ event_help_text = """Event command usage:
 Commands:
     list - List events
         Options:
-            year - List all upcoming events for the year
+            year - List all upcoming events for the current year
             month - List all upcoming events for the current month
             week - List all upcoming events for the current week
             day - List all upcoming events for the current day
@@ -97,7 +101,14 @@ def callback_handler(event, context):
 
 def daily_handler(event, context):
     print("Received request: " + json.dumps(event, indent=2))
-    return list_birthdays("day", True)
+    list_birthdays("day", True)
+    list_events("day", True)
+
+
+def weekly_handler(event, context):
+    print("Received request: " + json.dumps(event, indent=2))
+    list_birthdays("day", True)
+    list_events("week", True)
 
 
 def echo(message):
@@ -182,15 +193,16 @@ def list_events(command, silent=False):
     command = take_space(command)
 
     if command.startswith("year"):
-        return echo_events(get_events(), silent)
-    # elif command.startswith("month"):
-    #     return echo_birthdays(get_birthdays_for_month(), silent)
-    # elif command.startswith("week"):
-    #     return echo_birthdays(get_birthdays_for_week(), silent)
-    # elif command.startswith("day"):
-    #     return echo_birthdays(get_birthdays_for_day(), silent)
+        return echo_events(get_events_for_year(), silent)
+    elif command.startswith("month"):
+        return echo_events(get_events_for_month(), silent)
+    elif command.startswith("week"):
+        return echo_events(get_events_for_week(), silent)
+    elif command.startswith("day"):
+        return echo_events(get_events_for_day(), silent)
     else:
         return echo(event_help_text)
+
 
 def birthday(command, sender):
     command = take_space(command)
@@ -218,6 +230,7 @@ def list_birthdays(command, silent=False):
     else:
         return echo(birthday_help_text)
 
+
 def open_worksheet():
     gc = pygsheets.authorize(service_account_env_var='GOOGLE_SERVICE_ACCOUNT_CREDS')
     sh = gc.open_by_key(sheet_id)
@@ -241,22 +254,32 @@ def get_events():
     cred = service_account.Credentials.from_service_account_info(json.loads(os.getenv('GOOGLE_SERVICE_ACCOUNT_CREDS')))
     calendar = build('calendar', 'v3', credentials=cred)
     # Call the Calendar API
-    now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-    echo('Getting the upcoming 10 events')
-    events_result = calendar.events().list(calendarId=calendar_id, timeMin=now,
-                                           maxResults=10, singleEvents=True,
-                                           orderBy='startTime').execute()
-    events = events_result.get('items', [])
+    now = datetime.datetime.now(my_timezone).isoformat()
+    end_of_year = datetime.datetime(datetime.datetime.utcnow().year + 1, 1, 1, tzinfo=my_timezone).isoformat()
+
     results = []
-    for e in events:
-        startEntry = e['start']
-        start = datetime.datetime.fromisoformat(startEntry.get('dateTime', startEntry.get('date')))
-        summary = e['summary'] + " - " + format_event_time_string(e)
-        results.append({
-            "start": start,
-            "summary": summary
-        })
-    return results
+
+    page_token = None
+
+    while True:
+        events_result = calendar.events().list(calendarId=calendar_id, pageToken=page_token, timeMin=now,
+                                               timeMax=end_of_year,
+                                               maxResults=200, singleEvents=True,
+                                               orderBy='startTime').execute()
+        events = events_result.get('items', [])
+        for e in events:
+            startEntry = e['start']
+            start = datetime.datetime.fromisoformat(startEntry.get('dateTime', startEntry.get('date')))
+            summary = e['summary'] + " - " + format_event_time_string(e)
+            results.append({
+                "start": start,
+                "summary": summary
+            })
+        page_token = events_result.get('nextPageToken')
+        if not page_token:
+            break
+
+    return sorted(results, key=lambda x: x['start'])
 
 
 def format_event_time_string(event):
@@ -270,6 +293,35 @@ def format_event_time_string(event):
     else:
         result = result + " (All day)"
     return result
+
+
+def get_events_for_year():
+    events = get_events()
+    today = datetime.datetime.now(my_timezone)
+    return filter(lambda e: e['start'] >= today and e['start'].year == today.year, events)
+
+
+def get_events_for_month():
+    events = get_events()
+    today = datetime.datetime.now(my_timezone)
+    return filter(lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].month == today.month,
+                  events)
+
+
+def get_events_for_week():
+    events = get_events()
+    today = datetime.datetime.now(my_timezone)
+    return filter(
+        lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].month == today.month and e[
+            'start'].strftime(
+            "%U") == today.strftime("%U"), events)
+
+
+def get_events_for_day():
+    events = get_events()
+    today = datetime.datetime.now(my_timezone)
+    return filter(lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].date() == today.date(),
+                  events)
 
 
 def get_birthdays():
@@ -341,11 +393,12 @@ def echo_events(events, silent=False):
         echo("There are no upcoming events =(")
 
 
-
+def event_test_handler(event, context):
+    return daily_handler(event, context)
 
 
 def main():
-    return daily_handler(None, None)
+    return event_test_handler(None, None)
 
 
 if __name__ == "__main__":
