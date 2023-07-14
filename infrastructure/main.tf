@@ -159,7 +159,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_lambda_daily" {
   action = "lambda:InvokeFunction"
   function_name = aws_lambda_function.daily_query_lambda.function_name
   principal = "events.amazonaws.com"
-  source_arn = aws_cloudwatch_event_rule.birthday_lambda_daily_event_rule.arn
+  source_arn = aws_cloudwatch_event_rule.lambda_daily_event_rule.arn
 }
 
 
