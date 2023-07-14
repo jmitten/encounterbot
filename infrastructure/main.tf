@@ -121,7 +121,7 @@ resource "aws_lambda_function" "weekly_query_lambda" {
   }
 }
 
-resource "aws_cloudwatch_event_rule" "birthday_lambda_event_rule" {
+resource "aws_cloudwatch_event_rule" "birthday_lambda_daily_event_rule" {
   name = "encounter-bot-birthday-lambda-event-rule"
   description = "Every day at 12PM UTC"
   schedule_expression = "cron(0 12 * * ? *)"
@@ -129,7 +129,7 @@ resource "aws_cloudwatch_event_rule" "birthday_lambda_event_rule" {
 
 resource "aws_cloudwatch_event_target" "birthday_lambda_event_target" {
   arn = aws_lambda_function.daily_query_lambda.arn
-  rule = aws_cloudwatch_event_rule.birthday_lambda_event_rule.name
+  rule = aws_cloudwatch_event_rule.birthday_lambda_daily_event_rule.name
 }
 
 resource "aws_lambda_permission" "allow_cloudwatch_to_call_birthday_lambda" {
@@ -137,7 +137,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_birthday_lambda" {
   action = "lambda:InvokeFunction"
   function_name = aws_lambda_function.daily_query_lambda.function_name
   principal = "events.amazonaws.com"
-  source_arn = aws_cloudwatch_event_rule.birthday_lambda_event_rule.arn
+  source_arn = aws_cloudwatch_event_rule.birthday_lambda_daily_event_rule.arn
 }
 
 
