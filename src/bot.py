@@ -101,15 +101,17 @@ def callback_handler(event, context):
 
 def daily_handler(event, context):
     print("Received request: " + json.dumps(event, indent=2))
-    list_birthdays("day", True)
-    list_events("day", True)
-
-
-def weekly_handler(event, context):
-    print("Received request: " + json.dumps(event, indent=2))
-    list_birthdays("day", True)
-    list_events("week", True)
-
+    # Get today's date
+    today = datetime.date.today()
+    # Check if it's Sunday
+    if today.weekday() == 6:
+        print("Today is Sunday.")
+        list_birthdays("day", True)
+        list_events("week", True)
+    else:
+        print("Today is not Sunday.")
+        list_birthdays("day", True)
+        list_events("day", True)
 
 def echo(message):
     # Sanitization is for safety to prevent recursive loop attacks
