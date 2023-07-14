@@ -107,7 +107,7 @@ resource "aws_lambda_function" "daily_query_lambda" {
 resource "aws_cloudwatch_event_rule" "lambda_daily_event_rule" {
   name = "encounter-bot-birthday-daily-lambda-event-rule"
   description = "Every day at 12PM UTC"
-  schedule_expression = "cron(0 0 12 ? * * *)"
+  schedule_expression = "cron(0 12 * * ? *)"
 }
 
 
