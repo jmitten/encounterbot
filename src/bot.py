@@ -19,6 +19,8 @@ bot_id = os.getenv('BOT_ID')
 sheet_id = os.getenv('GOOGLE_SHEET_ID')
 calendar_id = os.getenv('GOOGLE_CALENDAR_ID')
 
+clock_drift_allowance = datetime.timedelta(minutes=2)
+
 help_text = """Encounter Bot Version 2.0.0
 
 Usage:
@@ -105,13 +107,11 @@ def daily_handler(event, context):
     today = datetime.date.today()
     # Check if it's Sunday
     if today.weekday() == 6:
-        print("Today is Sunday.")
         list_birthdays("day", True)
         list_events("week", True)
     else:
-        print("Today is not Sunday.")
+        list_events("month", True)
         list_birthdays("day", True)
-        list_events("day", True)
 
 def echo(message):
     # Sanitization is for safety to prevent recursive loop attacks
@@ -299,20 +299,20 @@ def format_event_time_string(event):
 
 def get_events_for_year():
     events = get_events()
-    today = datetime.datetime.now(my_timezone)
+    today = datetime.datetime.now(my_timezone) - clock_drift_allowance
     return filter(lambda e: e['start'] >= today and e['start'].year == today.year, events)
 
 
 def get_events_for_month():
     events = get_events()
-    today = datetime.datetime.now(my_timezone)
+    today = datetime.datetime.now(my_timezone) - clock_drift_allowance
     return filter(lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].month == today.month,
                   events)
 
 
 def get_events_for_week():
     events = get_events()
-    today = datetime.datetime.now(my_timezone)
+    today = datetime.datetime.now(my_timezone) - clock_drift_allowance
     return filter(
         lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].month == today.month and e[
             'start'].strftime(
@@ -321,7 +321,7 @@ def get_events_for_week():
 
 def get_events_for_day():
     events = get_events()
-    today = datetime.datetime.now(my_timezone)
+    today = datetime.datetime.now(my_timezone) - clock_drift_allowance
     return filter(lambda e: e['start'] >= today and e['start'].year == today.year and e['start'].date() == today.date(),
                   events)
 
